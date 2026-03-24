@@ -1,0 +1,15 @@
+# Dependencies
+node_modules
+tests*
+# yarn error logs
+yarn-error.log
+curl-format.txt
+script.sh*
+vpn_diagnose.sh*
+vpn_latency.log
+# Environment varibales
+.env*
+
+
+
+

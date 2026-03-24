@@ -1,0 +1,28 @@
+config:
+  target: "http://localhost:3000"   # your API base URL
+  phases:
+    - duration: 60                  # run for 60 seconds
+      arrivalRate: 20               # 20 requests per second
+  defaults:
+    headers:
+      Content-Type: "application/json"
+
+scenarios:
+  - name: "Mobile login and verify flow"
+    flow:
+      - post:
+          url: "/v1/user-server/auth/mobile-login"
+          json:
+            phone: "1234567890"
+            phone_code: "+1"
+          capture:
+            - json: "$.token"
+              as: "token"
+
+      - think: 1                    # wait for 1 second
+
+      - post:
+          url: "/v1/user-server/auth/login-mobile-verify"
+          json:
+            token: "{{ token }}"
+            otp: "123456"

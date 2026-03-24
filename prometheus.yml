@@ -1,0 +1,4 @@
+scrape_configs:
+  - job_name: 'afterhour-app'
+    static_configs:
+      - targets: ['localhost:3000'] # Or the IP/DNS of where your app is running

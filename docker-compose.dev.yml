@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  backend:
+    container_name: local-backend-spontime-dev    
+    build: .
+    image: local-dev-backend-spontime:dev        
+    restart: always
+    env_file: .env
+    ports:
+      - "4000:4000"
+    volumes:
+      - .:/usr/src/app                            
+    environment:
+      NODE_ENV: development
+

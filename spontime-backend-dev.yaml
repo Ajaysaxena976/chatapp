@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spontime-backend
+  namespace: spontime-dev
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: spontime-backend
+  template:
+    metadata:
+      labels:
+        app: spontime-backend
+    spec:
+      imagePullSecrets:
+        - name: gitlab-registry   # <-- Added here
+      initContainers:
+        - name: seed-db
+          image: registry.gitlab.com/masbit-sam/spontime/adam-dating-backend:dev-latest
+          command: ["sh", "-c", "npm run seed || true"]
+          envFrom:
+            - secretRef:
+                name: spontime-backend-env-dev
+      containers:
+        - name: spontime-backend
+          image: registry.gitlab.com/masbit-sam/spontime/adam-dating-backend:dev-latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - secretRef:
+                name: spontime-backend-env-dev
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 10
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "3"
+              memory: "2Gi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spontime-backend-svc
+  namespace: spontime-dev
+spec:
+  selector:
+    app: spontime-backend
+  ports:
+    - port: 80
+      targetPort: 3000
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spontime-backend-ingress
+  namespace: spontime-dev
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "60"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "60"
+    nginx.ingress.kubernetes.io/keepalive: "32"             # keep backend connections open
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"         # force HTTPS
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"       # reduce delay for small responses
+    nginx.ingress.kubernetes.io/proxy-body-size: "200m"       
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: dev-spontime-api.x.masbit.eu
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: spontime-backend-svc
+                port:
+                  number: 80
+
